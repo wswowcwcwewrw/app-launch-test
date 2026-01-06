@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>アプリ起動テスト</title>
+  <title>アプリ起動テスト（改善前 / 改善後）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -11,16 +11,24 @@
       background: #f5f5f5;
       padding: 20px;
     }
+    h2 {
+      margin-bottom: 10px;
+    }
     button {
       display: block;
       width: 100%;
       padding: 16px;
       font-size: 18px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       border-radius: 8px;
       border: none;
-      background: #007aff;
       color: #fff;
+    }
+    .btn-old {
+      background: #ff3b30; /* 赤：改善前 */
+    }
+    .btn-new {
+      background: #34c759; /* 緑：改善後 */
     }
     a {
       display: block;
@@ -28,6 +36,7 @@
       color: #007aff;
       text-decoration: none;
       font-size: 16px;
+      margin-top: 20px;
     }
     .note {
       margin-top: 30px;
@@ -41,43 +50,90 @@
 
   <h2>ALF-Web 発注アプリ 起動テスト</h2>
 
-  <!-- アプリ起動ボタン -->
-  <button onclick="openApp()">アプリを開く</button>
+  <!-- 改善前（不具合あり） -->
+  <button class="btn-old" onclick="openAppOld()">
+    アプリを開く（改善前：遅延そのまま）
+  </button>
 
-  <!-- フォールバック（手動） -->
+  <!-- 改善後 -->
+  <button class="btn-new" onclick="openAppNew()">
+    アプリを開く（改善後：イベント対応）
+  </button>
+
+  <!-- 手動フォールバック -->
   <a href="https://itunes.apple.com/us/app/alf-web-fa-zhu/id1183627756?l=ja&ls=1&mt=8">
-    アプリが起動しない場合はこちら（App Store）
+    App Store を開く
   </a>
 
   <div class="note">
-    <p>・iOS：アプリが入っていればそのまま起動します</p>
-    <p>・未インストールの場合は何も起きません（仕様）</p>
-    <p>・Android：Intent 経由で起動します</p>
+    <p><strong>改善前：</strong> iOSではアプリ起動後でも App Store に飛ぶ不具合を再現</p>
+    <p><strong>改善後：</strong> アプリ起動成功時は Store に行かない</p>
+    <p>※ 同じ端末・同じ条件で挙動を比較してください</p>
   </div>
 
   <script>
-    function openApp() {
-      var APP_SCHEME = 'orderapp://';
-      var ANDROID_PACKAGE = 'jp.alfweb.orderApp';
+    var APP_URL = 'orderapp://';
+    var IOS_STORE = 'https://itunes.apple.com/us/app/alf-web-fa-zhu/id1183627756?l=ja&ls=1&mt=8';
+    var ANDROID_PACKAGE = 'jp.alfweb.orderApp';
+
+    // =====================================================
+    // 改善前（元コードそのまま・不具合あり）
+    // =====================================================
+    function openAppOld() {
       var ua = navigator.userAgent.toLowerCase();
 
-      // ---- iOS ----
-      if (ua.match(/iphone|ipad|ipod/)) {
-        window.location.href = APP_SCHEME;
-        return;
-      }
+      if (ua.search(/iphone|ipad|ipod/) > -1) {
+        location.href = APP_URL;
 
-      // ---- Android ----
-      if (ua.match(/android/)) {
-        window.location.href =
+        // 起動しても必ず動く遅延処理（不具合）
+        setTimeout(function() {
+          location.href = IOS_STORE;
+        }, 500);
+
+      } else if (ua.search(/android/) > -1) {
+        document.location =
           'intent://#Intent;' +
           'scheme=orderapp;' +
           'package=' + ANDROID_PACKAGE + ';end';
+      }
+    }
+
+    // =====================================================
+    // 改善後（visibilitychange を使った現実解）
+    // =====================================================
+    function openAppNew() {
+      var ua = navigator.userAgent.toLowerCase();
+
+      if (ua.match(/iphone|ipad|ipod/)) {
+        var opened = false;
+
+        // アプリ起動
+        location.href = APP_URL;
+
+        // アプリに切り替わったらフラグON
+        document.addEventListener('visibilitychange', function onChange() {
+          if (document.hidden) {
+            opened = true;
+            document.removeEventListener('visibilitychange', onChange);
+          }
+        });
+
+        // 条件付きフォールバック
+        setTimeout(function() {
+          if (!opened) {
+            location.href = IOS_STORE;
+          }
+        }, 800);
+
         return;
       }
 
-      // ---- PCなど ----
-      alert('スマートフォンでアクセスしてください');
+      if (ua.match(/android/)) {
+        location.href =
+          'intent://#Intent;' +
+          'scheme=orderapp;' +
+          'package=' + ANDROID_PACKAGE + ';end';
+      }
     }
   </script>
 
