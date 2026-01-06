@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>アプリ起動テスト</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: none;
+      background: #007aff;
+      color: #fff;
+    }
+    a {
+      display: block;
+      text-align: center;
+      color: #007aff;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    .note {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>ALF-Web 発注アプリ 起動テスト</h2>
+
+  <!-- アプリ起動ボタン -->
+  <button onclick="openApp()">アプリを開く</button>
+
+  <!-- フォールバック（手動） -->
+  <a href="https://itunes.apple.com/us/app/alf-web-fa-zhu/id1183627756?l=ja&ls=1&mt=8">
+    アプリが起動しない場合はこちら（App Store）
+  </a>
+
+  <div class="note">
+    <p>・iOS：アプリが入っていればそのまま起動します</p>
+    <p>・未インストールの場合は何も起きません（仕様）</p>
+    <p>・Android：Intent 経由で起動します</p>
+  </div>
+
+  <script>
+    function openApp() {
+      var APP_SCHEME = 'orderapp://';
+      var ANDROID_PACKAGE = 'jp.alfweb.orderApp';
+      var ua = navigator.userAgent.toLowerCase();
+
+      // ---- iOS ----
+      if (ua.match(/iphone|ipad|ipod/)) {
+        window.location.href = APP_SCHEME;
+        return;
+      }
+
+      // ---- Android ----
+      if (ua.match(/android/)) {
+        window.location.href =
+          'intent://#Intent;' +
+          'scheme=orderapp;' +
+          'package=' + ANDROID_PACKAGE + ';end';
+        return;
+      }
+
+      // ---- PCなど ----
+      alert('スマートフォンでアクセスしてください');
+    }
+  </script>
+
+</body>
+</html>
