@@ -165,9 +165,11 @@
       if (ua.match(/android/)) {
         log('Android detected');
         document.location =
-          'intent://#Intent;' +
+          'intent://open#Intent;' +
           'scheme=orderapp;' +
-          'package=' + ANDROID_PACKAGE + ';end';
+          'package=jp.alfweb.orderApp;' +
+          'S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Djp.alfweb.orderApp;' +
+          'end';
 
       }
     }
