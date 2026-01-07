@@ -24,12 +24,9 @@
       border: none;
       color: #fff;
     }
-    .btn-old {
-      background: #ff3b30; /* 赤：改善前 */
-    }
-    .btn-new {
-      background: #34c759; /* 緑：改善後 */
-    }
+    .btn-old { background: #ff3b30; }
+    .btn-new { background: #34c759; }
+
     a {
       display: block;
       text-align: center;
@@ -38,11 +35,26 @@
       font-size: 16px;
       margin-top: 20px;
     }
+
     .note {
-      margin-top: 30px;
+      margin-top: 20px;
       font-size: 14px;
       color: #666;
-      line-height: 1.6;
+    }
+
+    .log {
+      margin-top: 20px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .log-title {
+      font-weight: bold;
+      margin-bottom: 6px;
     }
   </style>
 </head>
@@ -50,25 +62,28 @@
 
   <h2>ALF-Web 発注アプリ 起動テスト</h2>
 
-  <!-- 改善前（不具合あり） -->
+  <!-- 改善前 -->
   <button class="btn-old" onclick="openAppOld()">
     アプリを開く（改善前：遅延そのまま）
   </button>
 
   <!-- 改善後 -->
   <button class="btn-new" onclick="openAppNew()">
-    アプリを開く（改善後：イベント対応）
+    アプリを開く（改善後：イベント可視化）
   </button>
 
-  <!-- 手動フォールバック -->
   <a href="https://itunes.apple.com/us/app/alf-web-fa-zhu/id1183627756?l=ja&ls=1&mt=8">
     App Store を開く
   </a>
 
   <div class="note">
-    <p><strong>改善前：</strong> iOSではアプリ起動後でも App Store に飛ぶ不具合を再現</p>
-    <p><strong>改善後：</strong> アプリ起動成功時は Store に行かない</p>
-    <p>※ 同じ端末・同じ条件で挙動を比較してください</p>
+    <p><strong>改善前：</strong> 起動後も遅延処理が必ず走る</p>
+    <p><strong>改善後：</strong> アプリ切替を検知したらフォールバックを抑止</p>
+  </div>
+
+  <!-- ログ表示 -->
+  <div id="log" class="log">
+    <div class="log-title">ログ</div>
   </div>
 
   <script>
@@ -76,22 +91,33 @@
     var IOS_STORE = 'https://itunes.apple.com/us/app/alf-web-fa-zhu/id1183627756?l=ja&ls=1&mt=8';
     var ANDROID_PACKAGE = 'jp.alfweb.orderApp';
 
+    function log(msg) {
+      var logEl = document.getElementById('log');
+      var time = new Date().toLocaleTimeString();
+      logEl.innerHTML += `[${time}] ${msg}<br>`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
     // =====================================================
-    // 改善前（元コードそのまま・不具合あり）
+    // 改善前（元コードそのまま）
     // =====================================================
     function openAppOld() {
+      log('--- 改善前 openAppOld() ---');
       var ua = navigator.userAgent.toLowerCase();
 
-      if (ua.search(/iphone|ipad|ipod/) > -1) {
+      if (ua.match(/iphone|ipad|ipod/)) {
+        log('iOS detected');
+        log('location.href = orderapp://');
         location.href = APP_URL;
 
-        // 起動しても必ず動く遅延処理（不具合）
         setTimeout(function() {
+          log('fallback timer fired → go App Store');
           location.href = IOS_STORE;
         }, 500);
 
-      } else if (ua.search(/android/) > -1) {
-        document.location =
+      } else if (ua.match(/android/)) {
+        log('Android detected');
+        location.href =
           'intent://#Intent;' +
           'scheme=orderapp;' +
           'package=' + ANDROID_PACKAGE + ';end';
@@ -99,29 +125,37 @@
     }
 
     // =====================================================
-    // 改善後（visibilitychange を使った現実解）
+    // 改善後（イベント可視化）
     // =====================================================
     function openAppNew() {
+      log('--- 改善後 openAppNew() ---');
       var ua = navigator.userAgent.toLowerCase();
 
       if (ua.match(/iphone|ipad|ipod/)) {
+        log('iOS detected');
         var opened = false;
 
-        // アプリ起動
+        log('try open scheme: orderapp://');
         location.href = APP_URL;
 
-        // アプリに切り替わったらフラグON
         document.addEventListener('visibilitychange', function onChange() {
+          log('visibilitychange fired');
+          log('document.hidden = ' + document.hidden);
+
           if (document.hidden) {
             opened = true;
+            log('app switch detected → opened = true');
             document.removeEventListener('visibilitychange', onChange);
           }
         });
 
-        // 条件付きフォールバック
         setTimeout(function() {
+          log('fallback timer fired');
           if (!opened) {
+            log('opened = false → go App Store');
             location.href = IOS_STORE;
+          } else {
+            log('opened = true → skip App Store');
           }
         }, 500);
 
@@ -129,6 +163,7 @@
       }
 
       if (ua.match(/android/)) {
+        log('Android detected');
         location.href =
           'intent://#Intent;' +
           'scheme=orderapp;' +
